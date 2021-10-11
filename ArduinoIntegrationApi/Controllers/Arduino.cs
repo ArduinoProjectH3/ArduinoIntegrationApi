@@ -11,7 +11,7 @@ namespace ArduinoIntegrationApi.Controllers
     public class Arduino : Controller
 
     {
-
+       
         private IConfiguration Config;
 
         public Arduino(IConfiguration config)

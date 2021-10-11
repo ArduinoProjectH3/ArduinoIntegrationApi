@@ -4,14 +4,16 @@ using ArduinoIntegrationApi.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ArduinoIntegrationApi.Migrations
 {
     [DbContext(typeof(ArduinoApiContext))]
-    partial class ArduinoApiContextModelSnapshot : ModelSnapshot
+    [Migration("20211010103405_changedUserAndUsersClass")]
+    partial class changedUserAndUsersClass
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -49,27 +51,6 @@ namespace ArduinoIntegrationApi.Migrations
                     b.HasKey("Hr_Id");
 
                     b.ToTable("HumidityReading");
-                });
-
-            modelBuilder.Entity("ArduinoIntegrationApi.DataModels.JwtToken", b =>
-                {
-                    b.Property<int>("JwtToken_Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int")
-                        .HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-
-                    b.Property<DateTime>("ExpiryDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Token")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Username")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("JwtToken_Id");
-
-                    b.ToTable("JwtTokens");
                 });
 
             modelBuilder.Entity("ArduinoIntegrationApi.DataModels.LightReading", b =>

@@ -6,6 +6,8 @@ namespace ArduinoIntegrationApi.Context
     public class ArduinoApiContext : DbContext
     {
         public DbSet<RoomReading> RoomReading { get; set; }
+        public DbSet<Users> Users { get; set; }
+        public DbSet<JwtToken> JwtTokens { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
         {
@@ -17,6 +19,7 @@ namespace ArduinoIntegrationApi.Context
         {
             modelBuilder.Entity<RoomReading>()
                 .HasKey(rd => new {rd.Rr_RoomName, rd.Rr_Cts});
+
         }   
     }
 }

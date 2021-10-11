@@ -4,14 +4,16 @@ using ArduinoIntegrationApi.Context;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ArduinoIntegrationApi.Migrations
 {
     [DbContext(typeof(ArduinoApiContext))]
-    partial class ArduinoApiContextModelSnapshot : ModelSnapshot
+    [Migration("20211010135807_addedJWtToken")]
+    partial class addedJWtToken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -65,9 +67,11 @@ namespace ArduinoIntegrationApi.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Username")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("JwtToken_Id");
+
+                    b.HasIndex("Username");
 
                     b.ToTable("JwtTokens");
                 });
@@ -185,6 +189,15 @@ namespace ArduinoIntegrationApi.Migrations
                     b.HasKey("Username");
 
                     b.ToTable("Users");
+                });
+
+            modelBuilder.Entity("ArduinoIntegrationApi.DataModels.JwtToken", b =>
+                {
+                    b.HasOne("ArduinoIntegrationApi.DataModels.Users", "User")
+                        .WithMany()
+                        .HasForeignKey("Username");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ArduinoIntegrationApi.DataModels.RoomReading", b =>
