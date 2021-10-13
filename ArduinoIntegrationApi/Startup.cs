@@ -36,24 +36,24 @@ namespace ArduinoIntegrationApi
                 // default settings
                 x.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 x.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
-                
-            }).AddJwtBearer(x =>
-            {
-                // don't require https
-                // using default settings
-                x.RequireHttpsMetadata = false;
-                x.SaveToken = true;
-                x.TokenValidationParameters = new TokenValidationParameters()
-                {
-                    ValidateIssuerSigningKey = true,
-                    //IssuerSigningKey = new SymmetricSecurityKey(Encoding.ASCII.GetBytes(key)),
-                    ValidateIssuer = false,
-                    ValidateAudience = false
-                };
+
             });
 
-            //services.AddSingleton<IJwtAuthenticationManager>(new JwtAuthenticationManager(key));
-          
+            //    .AddJwtBearer(x =>
+            //{
+            //    // don't require https
+            //    // using default settings
+            //    x.RequireHttpsMetadata = false;
+            //    x.SaveToken = true;
+            //    x.TokenValidationParameters = new TokenValidationParameters()
+            //    {
+            //        ValidateIssuerSigningKey = true,
+            //        ValidateIssuer = false,
+            //        ValidateAudience = false
+            //    };
+            //});
+
+
 
             services.AddSwaggerGen(c =>
             {

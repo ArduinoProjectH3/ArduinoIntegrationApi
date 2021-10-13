@@ -2,9 +2,14 @@
 
 namespace ArduinoIntegrationApi.Authorization
 {
+    /// <summary>
+    /// Authorizer class contains logic to authorize api key
+    /// </summary>
     public class Authorizer
     {
+        // property to access Config
         private IConfiguration Config { get; set; }
+        // private variable to hold the apiKey value
         private static string ApiKeyName => "apiKey";
 
         public Authorizer(IConfiguration config)
@@ -12,6 +17,7 @@ namespace ArduinoIntegrationApi.Authorization
             this.Config = config;
         }
 
+        // method to validate if the users apiKey is equal to the api's apiKey from appsettings.json
         public bool ClientIsAuthorized(string apiKeyFromClient)
         {
             bool clientIsAuthorized = false;

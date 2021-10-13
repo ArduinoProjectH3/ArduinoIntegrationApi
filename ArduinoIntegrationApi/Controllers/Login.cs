@@ -9,11 +9,12 @@ using Microsoft.Extensions.Configuration;
 
 namespace ArduinoIntegrationApi.Controllers
 {
-    [Authorize]
+    // this controller is used by angular to login a user and signup a user
     [ApiController]
     [Route("api/Login")]
     public class Login : Controller
     {
+        // property of Iconfiguration
         private IConfiguration config;
 
         public IConfiguration Config
@@ -25,41 +26,54 @@ namespace ArduinoIntegrationApi.Controllers
         public Login(IConfiguration config)
         {
             this.config = config;
+            this.contextManager = new ContextManager(config);
+            this.jwtAuthenticationManager = new JwtAuthenticationManager(config);
         }
 
-
+        // property of JwtAuthenticationManager
         private JwtAuthenticationManager jwtAuthenticationManager;
 
-        public JwtAuthenticationManager MyProperty
+        public JwtAuthenticationManager JwtAuthenticationManager
         {
             get { return jwtAuthenticationManager; }
             set { jwtAuthenticationManager = value; }
         }
 
-        [AllowAnonymous]
+        private ContextManager contextManager;
+
+        public ContextManager ContextManager
+        {
+            get { return contextManager; }
+            set { contextManager = value; }
+        }
+
+
+        // post method is used to validate the users credentials and if they are correct, return a JwtToken string.
         [HttpPost]
         [Route("loginUser")]
         public IActionResult LoginUser([FromBody] User user)
         {
-            try {
+            try
+            {
+
+                // get a potentialuser from the database based on the provided username
                 Users potentialUser = ContextManager.GetUserFromDb(user.Username);
-                
-                
+
+                // check if the user exists
                 if (potentialUser != null)
                 {
+                    // if the user exists in the database verify the username and password 
                     if (ContextManager.VerifyCredentials(potentialUser, user.Username, user.Password))
                     {
-                        jwtAuthenticationManager = new JwtAuthenticationManager(config);
-
                         DateTime expiryDate = DateTime.Now.AddMinutes(30);
-
-                        JwtToken token = jwtAuthenticationManager.GenerateToken(expiryDate, potentialUser);
-
-                        ContextManager.SaveTokenToUser(token);
+                        JwtToken tok = jwtAuthenticationManager.GenerateToken(expiryDate, potentialUser);
+                        // store the token in the database and bind it to the username
+                        string token = ContextManager.SaveTokenToUser(tok, potentialUser);
 
                         if (token != null)
-                        { 
-                            return Ok(new {Token = token.Token});
+                        {
+                            // post the expiryDate in milliseconds
+                            return Ok(new {Token = token, username = potentialUser.Username});
                         }
                     }
                 }
@@ -73,13 +87,17 @@ namespace ArduinoIntegrationApi.Controllers
             return Unauthorized();
         }
 
+        // this method is used by angular to create a new user in the database
+        [AllowAnonymous]
         [HttpPost]
         [Route("Signup")]
         public IActionResult Signup([FromBody] User user)
         {
+            // create the user
             if (ContextManager.CreateUser(user))
             {
-                return Ok(user.Username + "has been created");
+                // return the username
+                return Ok(new {name = user.Username});
             }
 
             return new BadRequestResult();

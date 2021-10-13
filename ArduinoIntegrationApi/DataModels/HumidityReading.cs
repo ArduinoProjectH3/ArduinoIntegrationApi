@@ -1,11 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations;
+
 
 namespace ArduinoIntegrationApi.DataModels
 {
+    /// <summary>
+    /// this class is used to hold the humidity percentage
+    /// </summary>
     public class HumidityReading
     {
         [Key] public int Hr_Id { get; set; }

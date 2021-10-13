@@ -6,43 +6,56 @@ using ArduinoIntegrationApi.Authorization;
 
 namespace ArduinoIntegrationApi.Controllers
 {
+    /// <summary>
+    ///  this controller is used by the arduino to post data to the api
+    /// </summary>
     [ApiController]
     [Route("api/Arduino")]
     public class Arduino : Controller
 
     {
-       
         private IConfiguration Config;
 
         public Arduino(IConfiguration config)
         {
             this.Config = config;
-
+            this.contextManager = new ContextManager(config);
         }
 
-        [HttpGet]
+        private ContextManager contextManager;
+
+        public ContextManager ContextManager
+        {
+            get { return contextManager; }
+            set { contextManager = value; }
+        }
+
+
+
+
+        // this method is used by the arduino to post data
+        [ApiKeyAuthorizer]
+        [HttpPost]
         [Route("Post")]
         public StatusCodeResult PostRoomData(string roomName, float tempHead, float humHead, float tempFeet,
             string soundStatus, string curtainStatus, string lightStatus)
         {
             Authorizer authorizer = new Authorizer(Config);
 
-            bool userIsAuthorized = authorizer.ClientIsAuthorized(HttpContext.Request.Headers["apiKey"]);
+            // check if the user is authorized with the correct api key
 
-            if (userIsAuthorized)
+
+            // store the data in the database if the user is authorized
+            if (ContextManager.PostRoomData(roomName, tempHead, humHead, tempFeet, soundStatus, curtainStatus,
+                lightStatus))
             {
-                if (ContextManager.PostRoomData(roomName, tempHead, humHead, tempFeet, soundStatus, curtainStatus,
-                    lightStatus))
-                {
-                    return new StatusCodeResult(200);
-                }
-
-
-                return new StatusCodeResult(400);
+                return new StatusCodeResult(200);
             }
 
 
-            return new StatusCodeResult(401);
+            return new StatusCodeResult(400);
         }
+        
     }
 }
+

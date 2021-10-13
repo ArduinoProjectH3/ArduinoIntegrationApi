@@ -9,48 +9,64 @@ using Microsoft.Extensions.Configuration;
 
 namespace ArduinoIntegrationApi.Context
 {
-    public static class ContextManager
+    /// <summary>
+    /// this class is used as a logic layer between the controllers and the ArduinoApiContext
+    /// </summary>
+    public class ContextManager
     {
-        private static ArduinoApiContext ctx;
+        // property of ArduinoApiContext
+        private ArduinoApiContext ctx;
 
-        public static ArduinoApiContext Ctx
+        public ArduinoApiContext Ctx
         {
             get { return ctx; }
             set { ctx = value; }
         }
 
-        private static JwtAuthenticationManager jwtAuthenticationManager;
 
-        public static JwtAuthenticationManager JwtAuthenticationManager
+        private JwtAuthenticationManager jwtAuthenticationManager;
+
+        public JwtAuthenticationManager JwtAuthenticationManager
         {
             get { return jwtAuthenticationManager; }
             set { jwtAuthenticationManager = value; }
         }
 
-        private static IConfiguration config;
+        // property of IConfiguration
+        private IConfiguration config;
 
-        public static IConfiguration Config
+        public IConfiguration Config
         {
             get { return config; }
             set { config = value; }
         }
 
+        public ContextManager(IConfiguration config)
+        {
+            this.Config = config;
+        }
 
 
-        public static RoomReading GetLatestRoomData(string roomName)
+        // this method is used to to get the latest record of RoomReading from the database
+        public RoomReading GetLatestRoomData(string roomName)
         {
             var allRoomData = GetAllRoomData();
 
             var latestRoomData = (from roomData in allRoomData
                 where roomData.Rr_RoomName == roomName
                 orderby roomData.Rr_Cts descending
-                select roomData).ToList();
+                select roomData).ToList().FirstOrDefault();
 
-            return latestRoomData.FirstOrDefault();
+            if (latestRoomData == null)
+            {
+                return null;
+            }
+
+            return latestRoomData;
         }
 
-
-        private static List<RoomReading> GetAllRoomData()
+        // this method is used to get all records in RoomReading table
+        private List<RoomReading> GetAllRoomData()
         {
             ctx = new ArduinoApiContext();
             var allRoomData = Ctx.RoomReading
@@ -62,52 +78,65 @@ namespace ArduinoIntegrationApi.Context
                 .Include(curtain => curtain.Cr)
                 .ToList();
 
-            return allRoomData;
+            if (allRoomData.Any())
+            {
+                return allRoomData;
+            }
+
+            return null;
         }
 
-
-        public static bool PostRoomData(string roomName, float tempHead, float humHead, float tempFeet,
+        // this method is used to insert a new Room data reading which comes from an Arduino
+        public bool PostRoomData(string roomName, float tempHead, float humHead, float tempFeet,
             string soundStatus, string curtainStatus, string lightStatus)
         {
             bool newRoomDataAdded = false;
 
             DateTime dateNow = DateTime.Now;
 
-            //// remove millisecounds
+            //// remove milliseconds from the timestamp
             dateNow = new DateTime(dateNow.Year, dateNow.Month, dateNow.Day, dateNow.Hour, dateNow.Minute,
                 dateNow.Second, dateNow.Kind);
 
             using (ctx = new ArduinoApiContext())
             {
+                // create a new RoomReading object
                 ctx.RoomReading.Add(new RoomReading()
                 {
                     Rr_Cts = dateNow,
                     Rr_RoomName = roomName,
+                    // set Tr_Head object
                     Tr_Head = new TemperatureReading()
                     {
                         Tr_Value = tempHead,
                     },
+                    // set Hr object
                     Hr = new HumidityReading()
                     {
                         Hr_Value = humHead
                     },
+                    // set Tr_Feet object
                     Tr_Feet = new TemperatureReading()
                     {
                         Tr_Value = tempFeet
                     },
+                    // set Sr ojbect 
                     Sr = new SoundReading()
                     {
                         Sr_Value = soundStatus
                     },
+                    // set Cr object
                     Cr = new CurtainReading()
                     {
                         Cr_Value = curtainStatus
                     },
+                    // set Lr object
                     Lr = new LightReading()
                     {
                         Lr_Value = lightStatus
                     }
                 });
+                // save the changes to the database
                 ctx.SaveChanges();
                 newRoomDataAdded = true;
             }
@@ -115,14 +144,18 @@ namespace ArduinoIntegrationApi.Context
             return newRoomDataAdded;
         }
 
-        public static bool CreateUser(User user)
+        // this method creates a new user in the database
+        public bool CreateUser(User user)
         {
             ctx = new ArduinoApiContext();
 
             bool userCreated = false;
+            // check if the user already exists
             if (GetUserFromDb(user.Username) == null)
             {
+                // hash and salt the password provided by the user
                 var saltAndHashedPassword = Hasher.SaltAndHashPassword(user.Password);
+                // add the new user
                 ctx.Users.Add(new Users()
                 {
                     Username = user.Username,
@@ -130,6 +163,7 @@ namespace ArduinoIntegrationApi.Context
                     Salt = saltAndHashedPassword[0],
                     Email = user.Email
                 });
+                // save changes to the database
                 ctx.SaveChanges();
                 userCreated = true;
             }
@@ -141,13 +175,25 @@ namespace ArduinoIntegrationApi.Context
             return userCreated;
         }
 
-        public static Users GetUserFromDb(string userName)
+        // This method returns a potential user from the database with the provided username
+        public Users GetUserFromDb(string userName)
         {
             ctx = new ArduinoApiContext();
-            return ctx.Users.FirstOrDefault(user => user.Username == userName);
+            // return a user with the provided username 
+            var potenitalUser = (from user in ctx.Users
+                where user.Username == userName
+                select user).FirstOrDefault();
+
+            if (potenitalUser != null)
+            {
+                return potenitalUser;
+            }
+
+            return null;
         }
 
-        public static bool VerifyCredentials(Users potentialUser, string username, string password)
+        // this method is used to verify the users username and password in the database
+        public bool VerifyCredentials(Users potentialUser, string username, string password)
         {
             if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
@@ -159,6 +205,7 @@ namespace ArduinoIntegrationApi.Context
                 return false;
             }
 
+
             if (!Hasher.ValidatePassword(password, potentialUser))
             {
                 return false;
@@ -167,12 +214,21 @@ namespace ArduinoIntegrationApi.Context
             return true;
         }
 
-        public static JwtToken SaveTokenToUser(JwtToken token)
+        // this method is used to save the token to the user int the database
+        public string SaveTokenToUser(JwtToken token, Users potentialUser)
         {
-            return CreateNewUserToken(token);
+            var oldToken = GetSpecificUserToken(potentialUser);
+
+            if (potentialUser != null && oldToken != null)
+            {
+                return RefreshToken(oldToken.Token);
+            }
+
+            return CreateNewUserToken(token).Token;
         }
 
-        private static JwtToken CreateNewUserToken(JwtToken newToken)
+        // this method is used to create a new JwtToken in the database
+        private JwtToken CreateNewUserToken(JwtToken newToken)
         {
             using (ctx = new ArduinoApiContext())
             {
@@ -183,37 +239,8 @@ namespace ArduinoIntegrationApi.Context
             return newToken;
         }
 
-        private static bool UserHasToken(string tokenUsername)
-        {
-            ctx = new ArduinoApiContext();
-            var potentialToken = (from token in ctx.JwtTokens
-                where token.Username == tokenUsername
-                select token).ToList().FirstOrDefault();
 
-            if (potentialToken != null)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        public static bool TokenInDbIsEqual(Users potentialUser, string? clientCookieToken)
-        {
-            ctx = new ArduinoApiContext();
-            var tokenFromDb = (from token in ctx.JwtTokens
-                where token.Username == potentialUser.Username && token.Token == clientCookieToken
-                               select token).ToList().FirstOrDefault();
-
-            if (tokenFromDb != null)
-            {
-                return true;
-            }
-
-            return false;
-        }
-
-        private static JwtToken GetSpecificUserToken(Users potentialUser)
+        public JwtToken GetSpecificUserToken(Users potentialUser)
         {
             ctx = new ArduinoApiContext();
             var specificToken = (from token in ctx.JwtTokens
@@ -222,19 +249,69 @@ namespace ArduinoIntegrationApi.Context
             return specificToken;
         }
 
-        public static bool RefreshToken(Users potentialUser, JwtToken newToken)
+        public string UpdateExistingToken(string oldToken, Users user, JwtToken newToken)
         {
-            var tokenToBeUpdated = GetSpecificUserToken(potentialUser);
+            bool refreshed = false;
 
             using (ctx = new ArduinoApiContext())
             {
-                tokenToBeUpdated.Token = newToken.Token;
-                tokenToBeUpdated.ExpiryDate = newToken.ExpiryDate;
-                ctx.SaveChanges();
-                return true;
+                var tokenToBeUpdated = ctx.JwtTokens.SingleOrDefault(jwt => jwt.Token == oldToken);
+                if (tokenToBeUpdated != null)
+                {
+                    tokenToBeUpdated.Token = newToken.Token;
+                    ctx.SaveChanges();
+                    refreshed = true;
+                }
             }
 
-            return false;
+            if (refreshed)
+            {
+                return newToken.Token;
+            }
+            else
+            {
+                return null;
+            }
+        }
+
+        // this method returns the user based on what token they have provided
+
+        public Users GetUserFromDbWithToken(string token)
+        {
+            ctx = new ArduinoApiContext();
+            var potentialUser = (from usr in ctx.Users
+                join tok in ctx.JwtTokens on usr.Username equals tok.Username
+                where tok.Token == token
+                select usr).ToList().FirstOrDefault();
+
+            if (potentialUser == null)
+            {
+                return null;
+            }
+
+            return potentialUser;
+        }
+
+        public string RefreshToken(string oldToken)
+        {
+            jwtAuthenticationManager = new JwtAuthenticationManager(config);
+            DateTime expiryDate = DateTime.Now.AddMinutes(30);
+
+            var potentialUser = GetUserFromDbWithToken(oldToken);
+
+            if (potentialUser != null)
+            {
+                JwtToken newToken = jwtAuthenticationManager.GenerateToken(expiryDate, potentialUser);
+
+                string newTok = UpdateExistingToken(oldToken, potentialUser, newToken);
+
+                if (newTok != null)
+                {
+                    return newTok;
+                }
+            }
+
+            return null;
         }
     }
 }
